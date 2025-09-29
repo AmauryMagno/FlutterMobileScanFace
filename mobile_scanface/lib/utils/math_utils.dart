@@ -9,3 +9,12 @@ double cosineSimilarity(List<double> a, List<double> b) {
   }
   return dot / (sqrt(na) * sqrt(nb));
 }
+
+//Calculate Euclidiane Distance to compare embedings
+double euclideanDistance(List<double> a, List<double> b) {
+  double sum = 0;
+  for (int i = 0; i < a.length; i++) {
+    sum += (a[i] - b[i]) * (a[i] - b[i]);
+  }
+  return sqrt(sum);
+}

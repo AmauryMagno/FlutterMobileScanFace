@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_mesh_detection/google_mlkit_face_mesh_detection.dart';
 import 'package:mobile_scanface/components/error_popup.dart';
 import 'package:mobile_scanface/services/mlkitmesh_service.dart';
+import 'package:mobile_scanface/utils/effects/face_painter.dart';
+import 'package:mobile_scanface/utils/embeddings.dart';
 
 class CameraService extends StatefulWidget {
   final bool useFront;
   final Color buttonColor;
+  final Function(List<FaceMesh>)? onFaceDetected;
 
   const CameraService({
     super.key,
     this.useFront = true,
     this.buttonColor = Colors.blue,
+    this.onFaceDetected,
   });
 
   @override
@@ -56,7 +60,6 @@ class _CameraServiceState extends State<CameraService> {
   //Function to transform photo in image and capture landmark
   Future<void> _takePhoto() async {
     if (_controller == null || !_controller!.value.isInitialized) return;
-
     final photo = await _controller!.takePicture();
     _lastPhoto = photo;
 
@@ -71,7 +74,10 @@ class _CameraServiceState extends State<CameraService> {
     } else if (meshes.isEmpty) {
       await showErrorPopup(context, "Nenhum rosto detectdo!!");
     } else {
-      print("Faces detectadas ${meshes.length}");
+      if (widget.onFaceDetected != null) {
+        print("Faces detectadas ${meshes.length}");
+        widget.onFaceDetected!(meshes);
+      }
     }
 
     if (mounted) {
@@ -132,53 +138,5 @@ class _CameraServiceState extends State<CameraService> {
         );
       },
     );
-  }
-}
-
-/// Painter para desenhar FaceMesh
-class FacePainter extends CustomPainter {
-  final List<FaceMesh> faces;
-  final Size imageSize;
-
-  FacePainter(this.faces, this.imageSize);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint boxPaint = Paint()
-      ..color = Colors.greenAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0;
-
-    final Paint pointPaint = Paint()
-      ..color = Colors.red
-      ..style = PaintingStyle.fill
-      ..strokeWidth = 2.0;
-
-    // Escala para ajustar a proporção entre imagem da câmera e o widget da tela
-    final double scaleX = size.width / imageSize.width;
-    final double scaleY = size.height / imageSize.height;
-
-    for (final face in faces) {
-      // Desenhar boundingBox
-      final rect = Rect.fromLTRB(
-        face.boundingBox.left * scaleX,
-        face.boundingBox.top * scaleY,
-        face.boundingBox.right * scaleX,
-        face.boundingBox.bottom * scaleY,
-      );
-      canvas.drawRect(rect, boxPaint);
-
-      // Desenhar todos os pontos da mesh
-      for (final point in face.points) {
-        final dx = point.x * scaleX;
-        final dy = point.y * scaleY;
-        canvas.drawCircle(Offset(dx, dy), 1.5, pointPaint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant FacePainter oldDelegate) {
-    return oldDelegate.faces != faces;
   }
 }
